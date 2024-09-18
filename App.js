@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as Location from 'expo-location';
 
 export default function App() {
   const [region, setRegion] = useState({
@@ -14,7 +15,32 @@ export default function App() {
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState(null);
 
-  // coordinates
+  // Hakee nykyisen sijainnin sovelluksen avautuessa
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location permission denied');
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setRegion({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.02,
+      });
+      setLocation({
+        coords: {
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        },
+      });
+    })();
+  }, []);
+
+  // Koordinaattien hakeminen annetulle osoitteelle
   const getCoordinates = async (address) => {
     if (!address.trim()) {
       Alert.alert('This is not a valid address');
@@ -59,12 +85,12 @@ export default function App() {
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
             }}
-            title="Location"
+            title="Current Location"
           />
         )}
       </MapView>
 
-      {/* näppäimistön piilottaminen, iphone */}
+      {/* Näppäimistön piilottaminen, iPhone */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.searchBoxContainer}
